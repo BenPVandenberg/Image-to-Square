@@ -36,11 +36,15 @@ def main():
     except FileExistsError:
         pass
     print('Files Found:')
-    print(get_images())
+    images = [i for i in get_images() if i not in ['convert.exe', 'converted']]
+    print(images)
 
     print('Start Converting Images')
-    for image in get_images():
+    done = 0
+    for image in images:
         resize_image(image)
+        done += 1
+        print(str(done) + '/' + str(len(images)) + ' completed')
 
     print('Done.')
 
