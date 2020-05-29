@@ -1,8 +1,14 @@
 import os
+import threading
 from PIL import Image, UnidentifiedImageError
+
+num_done = 0  # number of pics converted
+pics_to_do = 0  # total number of pics to do
 
 
 def resize_image(image_name):
+    global num_done
+    global pics_to_do
     try:
         # Original Image
         im = Image.open(image_name)
@@ -18,10 +24,18 @@ def resize_image(image_name):
 
         new_name = image_name[:image_name.find('.')] + "_square.png"
         newim.save('converted/' + new_name, 'PNG')
+
+        # notify user and update num_done
+        num_done += 1
+        print(str(num_done) + '/' + str(pics_to_do) + ' completed')
     except PermissionError:
         print('ERROR: Missing Permissions for image "' + image_name + '"')
+        # update pics_to_do
+        pics_to_do -= 1
     except UnidentifiedImageError:
         print('ERROR: Not a valid image: "' + image_name + '"')
+        # update pics_to_do
+        pics_to_do -= 1
 
 
 # May add filters if required
@@ -35,18 +49,26 @@ def main():
         os.mkdir('converted')
     except FileExistsError:
         pass
+
     print('Files Found:')
     images = [i for i in get_images() if i not in ['convert.exe', 'converted']]
     print(images)
+    global pics_to_do
+    pics_to_do = len(images)
 
     print('Start Converting Images')
-    done = 0
+    # Init threads
+    threads = []
     for image in images:
-        resize_image(image)
-        done += 1
-        print(str(done) + '/' + str(len(images)) + ' completed')
+        t = threading.Thread(target=resize_image, args=(image,))
+        threads.append(t)
+        t.start()
 
-    print('Done.')
+    # wait for threads to close
+    for t in threads:
+        t.join()
+
+    input("Done. Press Enter to exit")
 
 
 if __name__ == '__main__':
